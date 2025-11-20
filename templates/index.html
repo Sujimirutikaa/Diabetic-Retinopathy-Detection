@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetic Retinopathy Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #4CAF50;
+            background-color: #f0f8f0;
+        }
+
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background-color: #e8f5e8;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        .preview-section {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin: 20px 0;
+        }
+
+        .results-section {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 30px;
+            border: 2px solid #e9ecef;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .main-result {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .stage-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-transform: uppercase;
+        }
+
+        .stage-0 { background: #4CAF50; }
+        .stage-1 { background: #FFC107; color: #333; }
+        .stage-2 { background: #FF9800; }
+        .stage-3 { background: #FF5722; }
+        .stage-4 { background: #F44336; }
+
+        .confidence-section {
+            margin: 20px 0;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 25px;
+            background: #eee;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            transition: width 1s ease;
+            border-radius: 15px;
+        }
+
+        .confidence-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .probabilities-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .probability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .probability-item:last-child {
+            border-bottom: none;
+        }
+
+        .probability-bar {
+            width: 60%;
+            height: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            text-align: center;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .info-section h3 {
+            color: #1976d2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stage-info {
+            margin: 12px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #1976d2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .stage-info strong {
+            color: #1976d2;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .upload-area {
+                padding: 30px 20px;
+            }
+            
+            .preview-image {
+                max-width: 250px;
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Diabetic Retinopathy Detection</h1>
+            <p>AI-powered analysis of retinal fundus images using deep learning</p>
+        </div>
+
+        <div class="content">
+            <div class="upload-section">
+                <div class="upload-area" onclick="document.getElementById('file-input').click()" 
+                     ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" 
+                     ondragenter="dragEnterHandler(event);" ondragleave="dragLeaveHandler(event);">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">
+                        <h3>Click to upload retinal image</h3>
+                        <p>Or drag and drop your image here</p>
+                        <p><small>Supported formats: JPG, JPEG, PNG | Max size: 16MB</small></p>
+                    </div>
+                </div>
+                <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)">
+            </div>
+
+            <div class="preview-section" id="preview-section">
+                <h3>📸 Selected Image:</h3>
+                <img class="preview-image" id="preview-image" alt="Selected image">
+                <br>
+                <button class="btn" onclick="predictImage()">🔍 Analyze Image</button>
+                <button class="btn btn-secondary" onclick="resetUpload()">🔄 Choose Another</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <h3>🤖 Analyzing image...</h3>
+                <p>Our AI model is examining the retinal image. This may take a few moments.</p>
+            </div>
+
+            <div class="error-message" id="error-message"></div>
+
+            <div class="results-section" id="results-section">
+                <div class="result-header">
+                    <h3>🎯 Analysis Results</h3>
+                </div>
+                
+                <div class="main-result">
+                    <div class="result-item">
+                        <strong>Predicted Stage:</strong>
+                        <span class="stage-indicator" id="predicted-stage"></span>
+                    </div>
+                    
+                    <div class="confidence-section">
+                        <strong>Confidence Level:</strong>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidence-bar"></div>
+                            <div class="confidence-text" id="confidence-text"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="probabilities-section">
+                    <h4>📊 Detailed Probability Distribution:</h4>
+                    <div id="all-probabilities"></div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>ℹ️ About Diabetic Retinopathy Stages</h3>
+                <div class="stage-info">
+                    <strong>Stage 0 - No DR (Healthy):</strong> No signs of diabetic retinopathy. The retina appears normal with no visible damage from diabetes.
+                </div>
+                <div class="stage-info">
+                    <strong>Stage 1 - Mild DR:</strong> Presence of microaneurysms only. Small areas of balloon-like swelling in the retina's tiny blood vessels.
+                </div>
+                <div class="stage-info">
+                    <strong>Stage 2 - Moderate DR:</strong> More than just microaneurysms but less than severe. May include dot and blot hemorrhages and hard exudates.
+                </div>
+                <div class="stage-info">
+                    <strong>Stage 3 - Severe DR:</strong> Multiple hemorrhages and microaneurysms in all four retinal quadrants, plus venous beading or prominent microvascular abnormalities.
+                </div>
+                <div class="stage-info">
+                    <strong>Stage 4 - Proliferative DR:</strong> Advanced stage with new abnormal blood vessel formation (neovascularization) and possible fibrous proliferation.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                displayPreview(file);
+            }
+        }
+
+        function dragOverHandler(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function dragEnterHandler(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function dragLeaveHandler(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function dropHandler(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                displayPreview(files[0]);
+            }
+        }
+
+        function displayPreview(file) {
+            if (!file.type.match('image.*')) {
+                showError('Please select a valid image file (JPG, JPEG, PNG)');
+                return;
+            }
+
+            const previewSection = document.getElementById('preview-section');
+            const previewImage = document.getElementById('preview-image');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewSection.style.display = 'block';
+                
+                // Hide previous results
+                document.getElementById('results-section').style.display = 'none';
+                document.getElementById('error-message').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function predictImage() {
+            if (!selectedFile) {
+                showError('Please select an image first');
+                return;
+            }
+
+            // Hide previous results and errors
+            document.getElementById('results-section').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // Send request
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    displayResults(data);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('An error occurred while analyzing the image: ' + error.message);
+            });
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results-section');
+            const predictedStage = document.getElementById('predicted-stage');
+            const confidenceText = document.getElementById('confidence-text');
+            const confidenceBar = document.getElementById('confidence-bar');
+            const allProbabilities = document.getElementById('all-probabilities');
+
+            // Display main prediction
+            predictedStage.textContent = data.prediction;
+            predictedStage.className = `stage-indicator stage-${data.stage}`;
+            
+            // Display confidence
+            confidenceText.textContent = `${data.confidence}%`;
+            confidenceBar.style.width = `${data.confidence}%`;
+
+            // Display all probabilities
+            allProbabilities.innerHTML = '';
+            for (const [stage, probability] of Object.entries(data.all_probabilities)) {
+                const probItem = document.createElement('div');
+                probItem.className = 'probability-item';
+                
+                const probBar = `
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: ${probability}%"></div>
+                    </div>
+                `;
+                
+                probItem.innerHTML = `
+                    <span><strong>${stage}</strong></span>
+                    ${probBar}
+                    <span><strong>${probability}%</strong></span>
+                `;
+                allProbabilities.appendChild(probItem);
+            }
+
+            resultsSection.style.display = 'block';
+            
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetUpload() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('preview-section').style.display = 'none';
+            document.getElementById('results-section').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Scroll to error
+            errorDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
